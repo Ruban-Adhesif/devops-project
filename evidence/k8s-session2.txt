@@ -1,0 +1,55 @@
+=== DEV ===
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/myapp-9f9cfcd5f-hcd98   1/1     Running   0          36s
+pod/myapp-9f9cfcd5f-snncr   1/1     Running   0          36s
+
+NAME            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/myapp   ClusterIP   10.96.20.183   <none>        80/TCP    67m
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/myapp   2/2     2            2           37s
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicaset.apps/myapp-9f9cfcd5f   2         2         2       37s
+
+=== STAGING ===
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/myapp-9f98f4877-2pmz7   1/1     Running   0          37s
+pod/myapp-9f98f4877-f86qr   1/1     Running   0          37s
+pod/myapp-9f98f4877-gfck9   1/1     Running   0          37s
+
+NAME            TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+service/myapp   ClusterIP   10.96.69.68   <none>        80/TCP    37s
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/myapp   3/3     3            3           37s
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicaset.apps/myapp-9f98f4877   3         3         3       37s
+
+=== PROD ===
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/myapp-7d68b7775-cvj28   1/1     Running   0          37s
+pod/myapp-7d68b7775-d9n84   1/1     Running   0          37s
+pod/myapp-7d68b7775-g7zwr   1/1     Running   0          37s
+pod/myapp-7d68b7775-gbbmj   1/1     Running   0          37s
+pod/myapp-7d68b7775-qpr7t   1/1     Running   0          37s
+
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/myapp   ClusterIP   10.96.128.128   <none>        80/TCP    37s
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/myapp   5/5     5            5           37s
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicaset.apps/myapp-7d68b7775   5         5         5       37s
+
+=== AUTH ===
+delete pods: no
+list pods: yes
+
+=== ROLLOUT HISTORY DEV ===
+deployment.apps/myapp 
+REVISION  CHANGE-CAUSE
+1         <none>
+
