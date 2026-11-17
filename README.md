@@ -44,20 +44,20 @@ Le run sur `main` après le merge, `build-test` puis `publish` :
 
 **1. Pourquoi interdire les push directs sur main ?**
 
-Si tout le monde peut pousser sur `main`, un commit peut arriver sans relecture et sans tests. Avec la protection, il faut une Pull Request. La CI tourne avant le merge, et quelqu'un d'autre peut regarder le diff.
+Sinon n'importe qui peut pousser un truc casse sans review. Avec la protection, faut passer par une PR, la CI passe avant, et un autre peut relire.
 
 **2. Différence entre une image et un conteneur**
 
-L'image, c'est le résultat de `docker build` : un modèle figé, avec le système, Node et notre code. Le conteneur, c'est cette image démarrée. On a construit `myapp:0.1` une fois, puis lancé un conteneur nommé `myapp` avec `docker run`. On pourrait en lancer plusieurs à partir de la même image.
+L'image c'est le package construit avec `docker build`. Le conteneur c'est cette image lancee. On a build `myapp:0.1`, puis `docker run` a cree le conteneur. On peut en lancer plusieurs a partir de la meme image.
 
-**3. Taille alpine et image complète**
+**3. Taille alpine et image complete**
 
-`myapp:0.1`, basée sur `node:20-alpine`, fait 194 MB. La même application sur `node:20` fait 1,57 GB. Le serveur ne change pas. `node:20` embarque une Debian complète, Alpine ne garde que le minimum pour faire tourner Node.
+Avec `node:20-alpine` on etait a 194 MB. Avec `node:20` ca passait a 1,57 GB. Meme code, juste la base qui change. Alpine est minimal, l'autre embarque une Debian complete.
 
-**4. Pourquoi taguer l'image avec le SHA du commit, et pas `latest` ?**
+**4. Pourquoi taguer avec le SHA et pas `latest` ?**
 
-`latest` est écrasé à chaque publication. On ne sait plus quel commit est derrière. Le SHA (`c33ee82…` pour le merge) désigne une seule version. On peut remonter de l'image au commit, puis au run Actions qui l'a publiée.
+`latest` bouge tout le temps, on sait plus quel commit c'est. Le SHA pointe sur une version precise, donc on peut relier image -> commit -> run Actions.
 
 **5. Fail fast**
 
-Le pipeline s'arrête à la première étape qui échoue. Quand le test attendait `KO` au lieu de `OK`, l'étape Tests a échoué et l'image n'a pas été construite ni publiée. On ne pousse pas plus loin un build déjà cassé.
+Des qu'une etape rate, le pipeline s'arrete. Genre le test qui attendait `KO` : Tests en rouge, pas de build/publish derriere. Evite de pousser une image deja cassee.
