@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod
+resources:
+  - ../../base
+replicas:
+  - name: myapp
+    count: 5
+images:
+  - name: ghcr.io/ruban-adhesif/devops-project
+    newTag: c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
+commonLabels:
+  env: prod
