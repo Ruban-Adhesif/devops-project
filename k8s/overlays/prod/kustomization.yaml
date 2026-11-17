@@ -11,3 +11,5 @@ images:
     newTag: c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
 commonLabels:
   env: prod
+patches:
+  - path: annotations.yaml

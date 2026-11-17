@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: dev
 resources:
   - ../../base
+  - rbac.yaml
 replicas:
   - name: myapp
     count: 2
