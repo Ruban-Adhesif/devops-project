@@ -30,6 +30,16 @@ curl http://localhost:3000/health
 
 L'image du lab est publiée sur GitHub Container Registry au merge sur `main`.
 
+## Pipelines
+
+Le test cassé, `GET /health` attendait `KO` :
+
+![pipeline en echec](screenshots/pipeline-echec.png)
+
+Le run sur `main` après le merge, `build-test` puis `publish` :
+
+![pipeline vert](screenshots/pipeline-ok.png)
+
 ## Questions
 
 **1. Pourquoi interdire les push directs sur main ?**
