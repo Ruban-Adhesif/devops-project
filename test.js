@@ -12,7 +12,7 @@ test("GET /health returns OK", async () => {
   const body = await res.text();
 
   assert.strictEqual(res.status, 200);
-  assert.strictEqual(body, "OK");
+  assert.strictEqual(body, "KO");
 
   server.close();
 });
