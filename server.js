@@ -6,7 +6,7 @@ function handler(req, res) {
   if (req.method === "GET" && req.url === "/health") {
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain");
-    res.end("OK");
+    res.end("OK v2");
     return;
   }
 

@@ -1,0 +1,9 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  annotations:
+    git-commit: c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
+    pipeline-run: https://github.com/Ruban-Adhesif/devops-project/actions
+    owner: team-a
+    ticket: OPS-123
