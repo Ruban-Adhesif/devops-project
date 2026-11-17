@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: myapp
-          image: ghcr.io/ruban-adhesif/devops-project:c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
+          image: ghcr.io/ruban-adhesif/devops-project:v2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
