@@ -1,40 +1,40 @@
-# Session 2 answers
+# Session 2 - reponses
 
-## Question 1
+## 1. Role d'un namespace ?
 
-A namespace separates resources in the same cluster: `dev`, `staging` and `prod` can each have a Service named `myapp` without colliding. It does not give strong security isolation by itself. By default a pod in one namespace can still talk to another if the network policy allows it. Isolation comes from NetworkPolicy, RBAC and maybe separate clusters.
+Ca sert a ranger les objets dans le cluster. On a mis `dev`, `staging` et `prod`, chacun avec son Service `myapp`, sans collision de noms. Par contre ca n'isole pas vraiment au niveau secu. Sans NetworkPolicy / RBAC, un pod d'un namespace peut encore parler a un autre. Pour une vraie isolation il faut ca, ou des clusters separes.
 
-## Question 2
+## 2. Pourquoi le pod revient apres un delete ?
 
-We asked for 3 replicas on the Deployment. When one pod is deleted, the ReplicaSet controller notices that Current is below Desired and creates a new pod. The Deployment owns the ReplicaSet, the ReplicaSet recreates the pods.
+Parce que le Deployment demande 3 replicas. Le ReplicaSet voit qu'il en manque un et en recree un. C'est le controleur ReplicaSet qui fait ca, pas magique.
 
-## Question 3
+## 3. Readiness vs liveness
 
-Readiness decides if the pod receives traffic. If it fails, the Endpoints remove the pod, the Service stops sending requests there, but the pod keeps running. Liveness decides if the container is still healthy. If it fails, kubelet restarts the container. In the lab, pointing both probes to `/nope` made Ready go to False and showed Unhealthy events.
+Readiness = est-ce que le pod peut recevoir du trafic. Si ca rate, le Service l'enleve des endpoints, mais le process continue. Liveness = est-ce que le conteneur est encore vivant. Si ca rate, kubelet le restart. Quand on a mis le chemin `/nope`, on a vu Ready=False et des events Unhealthy dans `kubectl describe`.
 
-## Question 4
+## 4. Les Secrets sont chiffres ?
 
-A Kubernetes Secret is only base64 encoded in etcd by default, not encrypted in a useful way. Anyone with API access to Secrets can read them. Better options: enable encryption at rest on the API server, store real secrets in a vault (Sealed Secrets, External Secrets, cloud KMS), and keep RBAC tight so few accounts can get Secrets.
+Non, par defaut c'est surtout du base64 dans etcd. Quiconque peut lire les Secrets via l'API les voit en clair. Pour ameliorer : encryption at rest cote API server, un vrai vault (ou Sealed Secrets / External Secrets), et limiter qui a le droit `get secrets` avec le RBAC.
 
-## Question 5
+## 5. Base + overlays
 
-Base holds what is common. Each overlay changes namespace, replicas and labels for one target. Same app description, three environments. In a real hybrid setup, overlays can also change the image registry, storage class, Ingress class or node selectors. On-prem and cloud clusters differ on networking, load balancers, storage and how you authenticate to the registry. The app manifests stay close.
+La base a le Deployment / Service commun. Chaque overlay change le namespace, le nombre de replicas et les labels. Meme appli, 3 cibles. En vrai hybrid/multi-cloud on changerait aussi le registry, le storage class, l'Ingress, etc. On-prem et cloud c'est surtout le reseau, les LB et le stockage qui changent, pas forcement les manifests de l'app.
 
-## Question 6
+## 6. Pourquoi le bad rollout n'a pas coupe l'app ?
 
-The broken image tag never became Ready. The new pods stayed on ErrImagePull / ImagePullBackOff. The old Ready pods kept answering. The Deployment did a rolling update, so it only replaces pods when the new ones are healthy. Traffic stayed on the working ReplicaSet.
+Le tag `broken` n'existait pas. Les nouveaux pods sont restes en ErrImagePull. Les anciens pods Ready ont continue a repondre. Le rolling update ne coupe les vieux pods que quand les nouveaux sont ok.
 
-## Question 7
+## 7. Retrouver commit / reviewer / pipeline depuis un pod prod
 
-From a prod pod, read the image tag and the Deployment annotations (`git-commit`, `pipeline-run`, `owner`, `ticket`). The commit SHA points to GitHub, where the Pull Request shows the reviewer. The pipeline-run URL points to the Actions run that built and published the image.
+On regarde l'image du pod + les annotations du Deployment (`git-commit`, `pipeline-run`, `owner`, `ticket`). Le SHA renvoie au commit GitHub, la PR montre qui a review, et le lien Actions montre le run qui a build/publish l'image.
 
-## Question 8
+## 8. Pourquoi kubectl edit en prod c'est risque
 
-`kubectl edit` in production changes the live object without going through Git. The next `kubectl apply` from the repo can overwrite or conflict with that change. The commit, the PR and the pipeline no longer match what is running. Changes should go through the overlays, a PR and the CI.
+Parce que ca modifie le cluster sans passer par Git. Ensuite le repo et ce qui tourne ne matchent plus. Un prochain `kubectl apply` peut ecraser le changement a la main, et on perd la tracabilite (commit, review, CI). Mieux vaut passer par un overlay + PR.
 
-## Evidence
+## Preuves
 
-### Replicas per environment
+Replicas :
 
 ```text
 NAMESPACE   NAME    READY
@@ -43,7 +43,7 @@ staging     myapp   3/3
 prod        myapp   5/5
 ```
 
-### RBAC checks
+RBAC :
 
 ```text
 kubectl auth can-i delete pods -n dev --as=system:serviceaccount:dev:viewer
@@ -53,7 +53,7 @@ kubectl auth can-i list pods -n dev --as=system:serviceaccount:dev:viewer
 yes
 ```
 
-### Prod annotations
+Annotations prod :
 
 ```text
 git-commit: c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
@@ -62,9 +62,9 @@ owner: team-a
 ticket: OPS-123
 ```
 
-### Rolling update and rollback
+Rolling update / rollback :
 
-- Image updated to `v2`, `/health` answered `OK v2`.
-- During the rollout, repeated curls stayed on HTTP 200.
-- Tag `broken` put a new pod in `ErrImagePull` while the old pods still answered `OK v2`.
-- `kubectl rollout undo deployment/myapp -n dev` restored the previous revision.
+- image `v2`, `/health` = `OK v2`
+- pendant le rollout, les curls sont restes en 200
+- tag `broken` -> ErrImagePull, les pods v2 repondaient encore
+- `kubectl rollout undo deployment/myapp -n dev` a remis la revision d'avant
