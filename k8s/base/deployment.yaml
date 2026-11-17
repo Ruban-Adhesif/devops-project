@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: ghcr.io/ruban-adhesif/devops-project:c33ee82e96870c4d0a00ced3cdacd9e6fcb7957e
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
