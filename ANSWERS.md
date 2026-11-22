@@ -68,3 +68,55 @@ Rolling update / rollback :
 - pendant le rollout, les curls sont restes en 200
 - tag `broken` -> ErrImagePull, les pods v2 repondaient encore
 - `kubectl rollout undo deployment/myapp -n dev` a remis la revision d'avant
+
+---
+
+# Session 3 - answers
+
+## 1. What did Terraform propose after deleting the container by hand?
+
+It wanted to create the container again (`docker_container.web will be created`, `1 to add`). The state still said the container exists, but in real life it was gone. This is called **drift**: the real infra doesn't match what Terraform thinks it has.
+
+## 2. Why never commit the state file?
+
+- It can have secrets in plain text (passwords, tokens, IPs...).
+- If everyone pushes their own state, you get conflicts and people overwrite each other.
+- Git has no locking, so two people can apply at the same time and break stuff.
+
+Better to keep it in a remote backend.
+
+## 3. One folder + one state per env vs workspaces
+
+Each env has its own folder, its own tfvars and its own state, so it's easy to see what's going on. If you mess up dev, staging is not touched. With workspaces it's the same code and you just switch, so it's easy to forget which one you're on and apply on the wrong env. Folders also let envs be a bit different if needed.
+
+## 4. Why a remote backend with locking for a team?
+
+Everyone uses the same state, not a copy on their laptop. Locking means only one person can apply at a time. It prevents:
+
+- two applies at once that corrupt the state
+- someone working with an old state and deleting/recreating stuff
+- losing the state if a laptop dies
+
+## 5. What can be sensitive in a state file?
+
+Basically all the resource attributes, in clear: passwords, API keys, tokens, private keys, connection strings, IPs, internal names. Even if a variable is marked `sensitive`, the value is still in the state.
+
+## 6. What if the preview env is never destroyed?
+
+- It costs money / eats cluster resources for nothing
+- Tons of old namespaces, hard to know what is still used
+- Old images and configs still running = security risk
+
+Mitigations:
+
+1. Auto `terraform destroy` in CI when the PR is closed or merged
+2. `expires` + `owner` labels and a cron job that deletes expired namespaces
+3. Quotas (ResourceQuota) per namespace + a limit on how many previews can exist
+
+## 7. Why plan on PR but apply only after merge?
+
+The plan shows what will change so the reviewer can check it before. Apply changes real infra, so it should only happen on reviewed and merged code. Also if you applied on every PR, multiple PRs would fight over the same infra and main wouldn't match what's deployed.
+
+## 8. Why short-lived creds (OIDC) and not long-lived keys?
+
+Long keys sit in the CI secrets forever. If they leak, someone can use them until someone notices and rotates them. With OIDC the pipeline gets a token that lasts a few minutes and only for that repo/branch. Nothing to store, nothing to rotate, and if it leaks it's already expired.
