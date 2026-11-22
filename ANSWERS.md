@@ -184,3 +184,20 @@ No resources found in pr-42 namespace.
 ```
 
 Note: the ghcr image is only built for amd64 and my Mac is arm64, so I built it locally and did `kind load docker-image myapp:c96f34d`.
+
+Terraform CI (`.github/workflows/terraform.yml`), on PRs touching `infra/**`:
+
+- `validate`: fmt -check + init -backend=false + validate on every folder
+- `plan`: plan for dev and staging, uploaded as artifacts `plan-dev` / `plan-staging`
+- `security`: checkov on `infra/`
+- no apply anywhere, token is read-only
+
+We tried trivy first but it doesn't check `kubernetes_*` Terraform resources, so a bad k8s setting wasn't caught. Checkov does. Checkov free version has no severity levels (needs a paid API key), so instead of "fail on high" we fail on **any** failed check, which is stricter.
+
+First checkov run found 6 problems in the preview. Fixed 3 for real (pod + container `securityContext`: non-root, no privilege escalation, read-only root fs, drop ALL caps). Skipped 3 with a reason in the code (image tag from a variable, SHA tag instead of digest, pull policy Always would break kind local images).
+
+```text
+clean:          Passed checks: 26, Failed checks: 0, Skipped checks: 3
+privileged=true: Passed checks: 25, Failed checks: 1, Skipped checks: 3
+                Check: CKV_K8S_16: "Do not admit privileged containers"
+```

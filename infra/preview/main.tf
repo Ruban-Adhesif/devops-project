@@ -18,6 +18,8 @@ provider "kubernetes" {
 locals {
   app_name  = "myapp"
   app_port  = 3000
+  app_uid   = 100 # appuser in the Dockerfile
+  app_gid   = 101 # appgroup in the Dockerfile
   namespace = "pr-${var.pr_number}"
   labels    = { app = local.app_name }
 }
@@ -35,6 +37,9 @@ resource "kubernetes_namespace_v1" "preview" {
 }
 
 resource "kubernetes_deployment_v1" "app" {
+  # checkov:skip=CKV_K8S_14:Tag comes from var.image, CI always passes the commit SHA tag
+  # checkov:skip=CKV_K8S_43:We pin by commit SHA tag (traceability), not by digest
+  # checkov:skip=CKV_K8S_15:Previews on kind use locally loaded images, pull Always would break them
   metadata {
     name      = local.app_name
     namespace = kubernetes_namespace_v1.preview.metadata[0].name
@@ -54,12 +59,29 @@ resource "kubernetes_deployment_v1" "app" {
       }
 
       spec {
+        security_context {
+          run_as_non_root = true
+          run_as_user     = local.app_uid
+          run_as_group    = local.app_gid
+        }
+
         container {
           name  = local.app_name
           image = var.image
 
           port {
             container_port = local.app_port
+          }
+
+          security_context {
+            allow_privilege_escalation = false
+            privileged                 = false
+            read_only_root_filesystem  = true
+            run_as_non_root            = true
+
+            capabilities {
+              drop = ["ALL"]
+            }
           }
 
           resources {

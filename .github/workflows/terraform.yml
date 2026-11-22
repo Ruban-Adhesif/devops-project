@@ -1,0 +1,65 @@
+name: terraform
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+
+# Read-only token: this workflow never applies anything (5.4)
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [infra/envs/dev, infra/envs/staging, infra/preview, infra/quickstart]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - name: fmt
+        run: terraform -chdir=${{ matrix.dir }} fmt -check -recursive
+      - name: init
+        run: terraform -chdir=${{ matrix.dir }} init -backend=false -input=false
+      - name: validate
+        run: terraform -chdir=${{ matrix.dir }} validate
+
+  plan:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, staging]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - name: init
+        run: terraform -chdir=infra/envs/${{ matrix.env }} init -input=false
+      - name: plan
+        run: |
+          terraform -chdir=infra/envs/${{ matrix.env }} plan -input=false \
+            -var-file=${{ matrix.env }}.tfvars -out=tfplan
+          terraform -chdir=infra/envs/${{ matrix.env }} show -no-color tfplan > plan-${{ matrix.env }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ matrix.env }}
+          path: plan-${{ matrix.env }}.txt
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          framework: terraform
+          # no soft_fail: any failed check fails the job
