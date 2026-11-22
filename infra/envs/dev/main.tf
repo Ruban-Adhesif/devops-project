@@ -1,4 +1,9 @@
 terraform {
+  # "remote-like" shared folder backend (simulates a team backend)
+  backend "local" {
+    path = "../../../.tf-backend/dev/terraform.tfstate"
+  }
+
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"

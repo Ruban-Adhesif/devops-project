@@ -97,6 +97,8 @@ Everyone uses the same state, not a copy on their laptop. Locking means only one
 - someone working with an old state and deleting/recreating stuff
 - losing the state if a laptop dies
 
+In the lab we faked it with a shared folder (`.tf-backend/dev/`) and `terraform init -migrate-state`. It works, but a local folder has no real locking and nobody else can reach it, so in real life you'd use S3 + DynamoDB, GCS, Terraform Cloud, etc.
+
 ## 5. What can be sensitive in a state file?
 
 Basically all the resource attributes, in clear: passwords, API keys, tokens, private keys, connection strings, IPs, internal names. Even if a variable is marked `sensitive`, the value is still in the state.
@@ -120,3 +122,65 @@ The plan shows what will change so the reviewer can check it before. Apply chang
 ## 8. Why short-lived creds (OIDC) and not long-lived keys?
 
 Long keys sit in the CI secrets forever. If they leak, someone can use them until someone notices and rotates them. With OIDC the pipeline gets a token that lasts a few minutes and only for that repo/branch. Nothing to store, nothing to rotate, and if it leaks it's already expired.
+
+## Proofs
+
+Modules, 2 envs side by side:
+
+```text
+webapp-staging  0.0.0.0:8092->80/tcp
+webapp-dev      0.0.0.0:8091->80/tcp
+```
+
+State list (dev, after moving to the shared backend):
+
+```text
+module.webapp.docker_container.web
+module.webapp.docker_image.app
+```
+
+Drift: recreated `webapp-dev` by hand with Docker on port 8093, then:
+
+```text
+$ terraform plan -refresh-only -var-file=dev.tfvars
+Note: Objects have changed outside of Terraform
+  # module.webapp.docker_container.web has been deleted
+
+$ terraform plan -var-file=dev.tfvars
+          + external = 8091
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
+
+Terraform tracks the container by its ID, so the new one is "unknown" and it thinks the old one is gone. Had to `docker rm -f` the manual one (name conflict), then apply -> `No changes. Your infrastructure matches the configuration.`
+
+Preview envs (one state per PR: `state/pr-42.tfstate`, `state/pr-43.tfstate`):
+
+```text
+$ kubectl get ns -l purpose=preview --show-labels
+NAME    STATUS   LABELS
+pr-42   Active   expires=2026-11-29,owner=team-a,pr=42,purpose=preview
+pr-43   Active   expires=2026-11-29,owner=team-a,pr=43,purpose=preview
+
+$ kubectl get pods -n pr-42
+myapp-79cdd6854b-4n8vz   1/1   Running
+$ kubectl get pods -n pr-43
+myapp-79cdd6854b-xkn2g   1/1   Running
+
+$ curl localhost:18042/health   (port-forward to pr-42)
+OK v2
+```
+
+Destroy preview 42:
+
+```text
+$ terraform init -reconfigure -backend-config="path=state/pr-42.tfstate"
+$ terraform destroy -var="pr_number=42" -var="image=myapp:c96f34d"
+Destroy complete! Resources: 3 destroyed.
+
+$ kubectl get ns -l purpose=preview
+pr-43   Active        <- 43 still alive, 42 gone
+$ kubectl get all -n pr-42
+No resources found in pr-42 namespace.
+```
+
+Note: the ghcr image is only built for amd64 and my Mac is arm64, so I built it locally and did `kind load docker-image myapp:c96f34d`.
