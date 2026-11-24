@@ -1,5 +1,10 @@
 # Session 2 - reponses
 
+Auteurs :
+- Ruben Bensais Rueda
+- Kais Luce Laurent
+- Sami Semallai
+
 ## 1. Role d'un namespace ?
 
 Ca sert a ranger les objets dans le cluster. On a mis `dev`, `staging` et `prod`, chacun avec son Service `myapp`, sans collision de noms. Par contre ca n'isole pas vraiment au niveau secu. Sans NetworkPolicy / RBAC, un pod d'un namespace peut encore parler a un autre. Pour une vraie isolation il faut ca, ou des clusters separes.

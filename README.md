@@ -2,6 +2,11 @@
 
 Petite API Node pour le lab DevOps.
 
+Auteurs :
+- Ruben Bensais Rueda
+- Kais Luce Laurent
+- Sami Semallai
+
 `GET /health` répond `OK`.
 
 ## Lancer en local
