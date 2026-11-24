@@ -206,3 +206,22 @@ clean:          Passed checks: 26, Failed checks: 0, Skipped checks: 3
 privileged=true: Passed checks: 25, Failed checks: 1, Skipped checks: 3
                 Check: CKV_K8S_16: "Do not admit privileged containers"
 ```
+
+# Session 4 - reponses
+
+## 5. Alert fatigue, `for` et `severity`
+
+L'alert fatigue, c'est quand il y a trop d'alertes et que plus personne ne les lit. Le `for: 2m` evite de pager quelqu'un pour un pic d'une seconde : la condition doit rester vraie 2 minutes avant que l'alerte parte. Le label `severity` separe ce qui doit reveiller quelqu'un (`critical`) de ce qui peut attendre le lendemain (`warning`).
+
+## 6. Pourquoi mitiger avant de chercher la cause ?
+
+On coupe l'impact d'abord. Un rollback rend le service aux utilisateurs en une minute. Chercher la cause pendant que l'app est cassee, c'est laisser l'incident durer. On debug ensuite, tranquillement, sur l'ancienne image qui tourne.
+
+## 7. Pourquoi un postmortem sans blame ?
+
+Si le postmortem accuse une personne, la fois d'apres plus personne ne raconte ce qui s'est vraiment passe. On decrit le systeme, pas la personne : "Kais a deploye une mauvaise version" devient "une image avec un taux d'erreur eleve est arrivee en dev sans smoke test".
+
+## 8. Deux changements de pipeline pour eviter que ca recommence
+
+- **Smoke test apres le deploiement** : `/health` doit repondre 200, sinon le job est rouge.
+- **Canary** : on deploie un seul pod d'abord, on regarde le ratio de 5xx, et seulement ensuite on deploie le reste.
