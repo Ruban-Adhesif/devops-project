@@ -219,7 +219,7 @@ On coupe l'impact d'abord. Un rollback rend le service aux utilisateurs en une m
 
 ## 7. Pourquoi un postmortem sans blame ?
 
-Si le postmortem accuse une personne, la fois d'apres plus personne ne raconte ce qui s'est vraiment passe. On decrit le systeme, pas la personne : "Kais a deploye une mauvaise version" devient "une image avec un taux d'erreur eleve est arrivee en dev sans smoke test".
+Si le postmortem accuse une personne, la fois d'apres plus personne ne raconte ce qui s'est vraiment passe. On decrit le systeme, pas la personne : "Alex a deploye une mauvaise version" devient "une image avec un taux d'erreur eleve est arrivee en dev sans smoke test".
 
 ## 8. Deux changements de pipeline pour eviter que ca recommence
 
