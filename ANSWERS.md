@@ -209,6 +209,22 @@ privileged=true: Passed checks: 25, Failed checks: 1, Skipped checks: 3
 
 # Session 4 - reponses
 
+## 1. Pourquoi un user id ou une URL avec des ids est un mauvais label ?
+
+Chaque valeur de label cree une serie. Des ids uniques font exploser le nombre de series, Prometheus garde tout en memoire et les requetes ralentissent. On label par route fixe (`/error`), pas par `/users/42`.
+
+## 2. Pourquoi logger en JSON sur stdout plutot que dans un fichier texte ?
+
+Kubernetes recupere stdout. Un fichier dans le conteneur disparait au redemarrage. Le JSON se parse (level, status, path). Une ligne de texte libre, non.
+
+## 3. La cible n'apparait pas. Trois checks
+
+Le Service a le label `app: myapp` et un port nomme `http`. Le ServiceMonitor est dans `monitoring`, avec le label `release: monitoring`, et il selectionne le namespace `dev`. Les pods repondent vraiment sur `/metrics`.
+
+## 4. Pourquoi le 95e percentile plutot que la moyenne ?
+
+Le p95 montre les requetes lentes. La moyenne est tiree vers le bas par les `/health` tres rapides, donc un `/slow` a 2 s disparait presque.
+
 ## 5. Alert fatigue, `for` et `severity`
 
 L'alert fatigue, c'est quand il y a trop d'alertes et que plus personne ne les lit. Le `for: 2m` evite de pager quelqu'un pour un pic d'une seconde : la condition doit rester vraie 2 minutes avant que l'alerte parte. Le label `severity` separe ce qui doit reveiller quelqu'un (`critical`) de ce qui peut attendre le lendemain (`warning`).
